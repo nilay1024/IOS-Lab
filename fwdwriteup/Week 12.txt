@@ -1,0 +1,68 @@
+//param.h
+Change the value of FSSIZE
+#define FSSIZE       22000  // size of file system in blocks
+
+//mkfs.c
+Add these lines and replace wherever required
+int ninodes = 200;
+int nblocks = 21049;  // Number of data blocks
+int size = 21113;
+
+//fs.h
+Change this line from NDIRECT+1 to 2
+uint addrs[NDIRECT+2];
+
+Change the value of NDIRECT from 12 to 11
+#define NDIRECT 11
+
+Add these lines
+#define NDINDIRECT_ENTRY (128)            // double indirect, number of entry
+#define NDINDIRECT_PER_ENTRY (128)        // double indirect, number of unit per entry
+#define NDOUBLE_INDIRECT (NDINDIRECT_ENTRY * NDINDIRECT_PER_ENTRY)
+
+Add NDOUBLE_INDIRECT to the below statement
+#define MAXFILE (NDIRECT + NINDIRECT + NDOUBLE_INDIRECT)
+
+
+//fs.c
+Add the below code in static uint bmap function
+
+Add this line in the beginning with other declarations
+short entry, offset;
+
+Add this below everything that's already there
+if(bn < NDOUBLE_INDIRECT)
+{
+    // Load double indirect block, allocating if necessary.
+    if((addr = ip->addrs[NDIRECT + 1]) == 0)
+      ip->addrs[NDIRECT + 1] = addr = balloc(ip->dev);
+
+    // get the double indirect table, first level
+    bp = bread(ip->dev, addr);
+    a = (uint*)bp->data;
+
+    // calculate the entry number and the index
+    entry = bn / NDINDIRECT_PER_ENTRY;
+    offset = bn % NDINDIRECT_PER_ENTRY;
+
+    // load level B table, allocating if necessary
+    if((addr = a[entry]) == 0){
+      a[entry] = addr = balloc(ip->dev);
+      log_write(bp);
+    }
+    brelse(bp);
+
+    // get the double indirect table, second level
+    bp = bread(ip->dev, addr);
+    a = (uint*)bp->data;
+
+    // if the offset doesnt exist, assign a block to this entry
+    if((addr = a[offset]) == 0)
+    {
+      a[offset] = addr = balloc(ip->dev);
+      log_write(bp);
+    }
+
+    brelse(bp);
+    return addr;
+}

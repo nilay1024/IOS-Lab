@@ -1,0 +1,66 @@
+Add the following files:
+//defs.h
+int cps(void);
+
+//user.h
+int cps(void);
+
+//usys.S
+SYSCALL(cps)
+
+//syscall.c
+extern int sys_cps(void);
+.
+.
+.
+[SYS_cps]	sys_cps,
+
+//syscall.h
+#define SYS_cps 22
+
+//sysproc.c
+int sys_cps(void)
+{
+	return cps()
+}
+
+
+//ps.c
+#include "types.h"
+#include "stat.h"
+#include "user.h"
+
+int
+main(void)
+{
+    cps();
+    exit();
+}
+
+//proc.c
+Add the below function in the file
+int cps(void)
+{
+	Copy the states from the previous function
+	static char *states[] = 
+	{
+		[UNUSED]    "unused",
+		[EMBRYO]    "embryo",
+		[SLEEPING]  "sleep ",
+		[RUNNABLE]  "runble",
+		[RUNNING]   "run   ",
+		[ZOMBIE]    "zombie"
+	};
+
+	struct proc *p;
+
+	for(p=ptable.proc;p<&ptable.proc[NPROC];p++)
+	{
+		if(p->state!=UNUSED)
+		{
+			cprintf("%d %s %s \n", p->pid, states[p->state], p->name);
+		}
+	}
+	return 0;
+}
+

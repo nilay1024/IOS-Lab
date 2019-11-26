@@ -1,0 +1,30 @@
+//vm.c
+Change mappages function from static int to int
+int mappages(pde_t *pgdir, void *va, uint size, uint pa, int perm);
+
+//trap.c
+Add these two lines above all the functions in the declaration area
+char *mem;
+int mappages(pde_t *pgdir, void *va, uint size, uint pa, int perm); 
+Copy the line above from vm.c
+
+Add this case in the switch block of trap function
+case T_PGFLT:
+    mem=kalloc();
+    memset(mem, 0, PGSIZE);
+    uint a = PGROUNDDOWN(rcr2());
+    mappages(myproc()->pgdir, (char *)a, PGSIZE, (uint)mem - KERNBASE, PTE_W|PTE_U);
+    return;
+
+//sysproc.c
+int
+sys_sbrk(void)
+{
+  Remove these lines:
+  if(growproc(n) < 0)
+    return -1;
+  
+  Add this line:
+  myproc()->sz=myproc()->sz+n;
+}
+
